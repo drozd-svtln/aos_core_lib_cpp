@@ -661,7 +661,10 @@ void Launcher::LoadInstancesData(const Array<InstanceInfo>& storedInstances)
     }
 
     for (const auto& instanceInfo : storedInstances) {
-        auto [instanceData, err] = AddInstanceData(instanceInfo);
+        auto [rawInstanceData, resErr] = AddInstanceData(instanceInfo);
+        auto instanceData = rawInstanceData;
+        auto err = resErr;
+
         if (!err.IsNone()) {
             LOG_ERR() << "Failed to add instance data" << Log::Field("instance", instanceInfo)
                       << Log::Field(AOS_ERROR_WRAP(err));
@@ -674,9 +677,9 @@ void Launcher::LoadInstancesData(const Array<InstanceInfo>& storedInstances)
         }
 
         if (err = mLaunchPool.AddTask([this, instanceData](void*) {
-                if (auto err = LoadInstanceData(*instanceData); !err.IsNone()) {
+                if (auto loadErr = LoadInstanceData(*instanceData); !loadErr.IsNone()) {
                     LOG_ERR() << "Failed to load instance data" << Log::Field("instance", instanceData->mInfo)
-                              << Log::Field(AOS_ERROR_WRAP(err));
+                              << Log::Field(AOS_ERROR_WRAP(loadErr));
                 }
             });
             !err.IsNone()) {
