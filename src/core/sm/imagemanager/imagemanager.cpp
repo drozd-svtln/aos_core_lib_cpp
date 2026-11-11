@@ -174,7 +174,10 @@ Error ImageManager::InstallUpdateItem(const UpdateItemInfo& itemInfo)
     LOG_INF() << "Install update item" << Log::Field("itemID", itemInfo.mID) << Log::Field("version", itemInfo.mVersion)
               << Log::Field("type", itemInfo.mType) << Log::Field("manifestDigest", itemInfo.mManifestDigest);
 
-    auto [installItemIt, err] = CreateInstallingItem(itemInfo);
+    auto [rawInstallItemIt, resErr] = CreateInstallingItem(itemInfo);
+    auto installItemIt = rawInstallItemIt;
+    auto err = resErr;
+
     if (!err.IsNone()) {
         return err;
     }
@@ -182,8 +185,7 @@ Error ImageManager::InstallUpdateItem(const UpdateItemInfo& itemInfo)
     auto& installItem = *installItemIt;
 
     auto releaseInstallingItem
-        = DeferRelease(this, [&](ImageManager* self) { self->ReleaseInstallingItem(installItemIt); });
-
+        = DeferRelease(this, [self = this, installItemIt](ImageManager*) { self->ReleaseInstallingItem(installItemIt); });
     oci::ContentDescriptor manifestDescriptor {"", itemInfo.mManifestDigest, 0};
 
     LOG_DBG() << "Install manifest blob" << Log::Field("digest", itemInfo.mManifestDigest);
